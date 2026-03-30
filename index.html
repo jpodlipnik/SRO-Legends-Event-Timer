@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SRO Legends Event Tracker</title>
+    <style>
+        :root { --bg: #0f172a; --card: #1e293b; --accent: #38bdf8; --text: #f8fafc; --highlight: #fbbf24; --danger: #ef4444; --success: #10b981; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        .header { text-align: center; margin-bottom: 30px; border-bottom: 1px solid #334155; padding-bottom: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; max-width: 1400px; margin: 0 auto; }
+        .card { background: var(--card); border-radius: 12px; padding: 20px; border-top: 4px solid var(--accent); position: relative; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.4); transition: 0.3s; }
+        .card.active-alert { border-top-color: var(--danger); animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+        .inactive { opacity: 0.4; filter: grayscale(0.8); }
+        h2 { margin: 0; color: var(--accent); font-size: 1.4rem; letter-spacing: 0.5px; }
+        .timer { font-size: 2.4rem; font-weight: bold; font-family: 'Courier New', monospace; margin: 10px 0; color: #fff; }
+        .info-table { width: 100%; border-top: 1px solid #334155; margin-top: 10px; padding-top: 10px; }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 0.9rem; }
+        .label { color: #94a3b8; }
+        .val { font-weight: bold; color: var(--highlight); }
+        .local-val { color: var(--success); }
+        .status-badge { font-size: 0.65rem; font-weight: bold; background: #334155; padding: 3px 10px; border-radius: 12px; display: inline-block; margin-bottom: 10px; text-transform: uppercase; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>Silkroad Legends Event Tracker</h1>
+    <div style="display: flex; justify-content: center; gap: 40px; font-weight: 600;">
+        <div>🌍 Your time: <span id="local-clock" style="color: var(--success)">--:--:--</span></div>
+        <div>🏰 Server time (UTC+3): <span id="server-clock" style="color: var(--highlight)">--:--:--</span></div>
+    </div>
+    <p style="font-size: 0.8rem; color: #64748b; margin-top: 10px;">Click anywhere on the page to enable sound alarm (1 min before spawn).</p>
+</div>
+
+<div class="grid" id="event-grid"></div>
+
+<audio id="alarm-sound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
+
+<script>
+    // --- CONFIGURATION ---
+    const serverOffset = 3; // UTC+3
+
+    // Days: 0=Sun, 1=Mont, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
+    const events = [
+        { name: "Selket &amp; Neith", times: ["06:30", "12:30", "18:30"], days: [1,2,3,4,5,6] },
+        { name: "Isis &amp; Anubis", times: ["07:30", "14:30", "20:30"], days: [1,2,3,4,5,6] },
+        { name: "Haroesis &amp; Seth", times: ["18:30"], days: [0] },
+        { name: "Beakyung The White Viper", times: ["21:30"], days: [5] },
+        { name: "The Roc", times: ["21:30"], days: [6] },
+        { name: "Capture The Flag", times: ["01:00", "05:00", "09:00", "13:00", "17:00", "21:00"], days: [0,1,2,3,4,5,6] },
+        { name: "Battle Arena (Score)", times: ["04:00", "08:00", "16:00"], days: [0,1,2,3,4,5,6] },
+        { name: "Battle Arena (Flag)", times: ["12:00", "20:00"], days: [0,1,2,3,4,5,6] },
+        { name: "Survival Arena", times: ["11:00", "23:00"], days: [0,1,2,3,4,5,6] },
+        { name: "Special Goods Time", times: ["03:30", "09:30", "15:30", "21:30"], days: [0,1,2,3,4,5,6] },
+        { name: "Last Man Standing", times: ["11:30", "23:30"], days: [0,1,2,3,4,5,6] },
+        { name: "War of Leagues", times: ["19:30"], days: [0,1,2,3,4,5,6] },
+        { name: "Tower Defense", times: ["17:30"], days: [0,5,6] },
+        { name: "Guild Wars", times: ["20:30"], days: [0] },
+        { name: "Fortress War", times: ["21:30"], days: [0] },
+    ];
+
+    function update() {
+        const now = new Date();
+        const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+        const serverDate = new Date(utc + (3600000 * serverOffset));
+        
+        document.getElementById('local-clock').innerText = now.toLocaleTimeString('sl-SI');
+        document.getElementById('server-clock').innerText = serverDate.toLocaleTimeString('sl-SI', {hour12: false});
+
+        let html = "";
+
+        events.forEach(event => {
+            let nextDate = null;
+            let displayTimeServer = "";
+
+            // Next available
+            for (let dOff = 0; dOff < 8; dOff++) {
+                let checkDay = (serverDate.getDay() + dOff) % 7;
+                
+                if (event.days.includes(checkDay)) {
+                    for (let tStr of event.times) {
+                        const [h, m] = tStr.split(':').map(Number);
+                        let temp = new Date(utc + (3600000 * serverOffset));
+                        temp.setDate(serverDate.getDate() + dOff);
+                        temp.setHours(h, m, 0, 0);
+
+                        if (temp > serverDate) { 
+                            nextDate = temp; 
+                            displayTimeServer = tStr; 
+                            break; 
+                        }
+                    }
+                }
+                if (nextDate) break;
+            }
+
+            const diff = nextDate - serverDate;
+            const hours = Math.floor(diff / 3600000);
+            const minutes = Math.floor((diff % 3600000) / 60000);
+            const seconds = Math.floor((diff % 60000) / 1000);
+
+            // Sound alarm (1 min before spawn)
+            if (hours === 0 && minutes === 1 && seconds === 0) {
+                document.getElementById('alarm-sound').play().catch(() => {});
+            }
+
+            // Calculation of local time
+            const localDate = new Date(nextDate.getTime() - (serverOffset * 3600000) + (now.getTimezoneOffset() * -60000));
+            const localDisplay = localDate.getHours() + ":" + String(localDate.getMinutes()).padStart(2, '0');
+            
+            const isToday = event.days.includes(serverDate.getDay());
+            const isSoon = hours === 0 && minutes < 10;
+
+            html += `
+                <div class="card ${!isToday ? 'inactive' : ''} ${isSoon ? 'active-alert' : ''}">
+                    <span class="status-badge" style="color: ${isToday ? 'var(--success)' : '#94a3b8'}">
+                        ${isToday ? '● Available today' : '○ Unavailable today'}
+                    </span>
+                    <h2>${event.name}</h2>
+                    <div class="timer" style="color: ${isSoon ? 'var(--danger)' : 'white'}">
+                        ${String(hours).padStart(2,'0')}:${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}
+                    </div>
+                    <div class="info-table">
+                        <div class="info-row">
+                            <span class="label">Server Time:</span>
+                            <span class="val">${displayTimeServer}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Your time:</span>
+                            <span class="val local-val">${localDisplay}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        document.getElementById('event-grid').innerHTML = html;
+    }
+
+    // Activate sound
+    document.body.addEventListener('click', () => { console.log("Audio enabled"); }, {once: true});
+
+    setInterval(update, 1000);
+    update();
+</script>
+
+</body>
+</html>
