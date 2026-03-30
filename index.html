@@ -213,7 +213,7 @@
         eventData.forEach(e => {
             const isSoon = e.diffMs < 600000;
             fixedHtml += `<div class="card ${!e.isToday ? 'inactive' : ''} ${isSoon ? 'active-alert' : ''}">
-                <span class="status-badge" style="color:${e.isToday ? 'var(--success)' : '#94a3b8'}">${e.isToday ? '● Active' : '○ Off'}</span>
+                <span class="status-badge" style="color:${e.isToday ? 'var(--success)' : '#94a3b8'}">${e.isToday ? '● Available' : '○ Not.available today'}</span>
                 <h2>${e.name}</h2>
                 <div class="timer">${formatDiff(e.diffMs)}</div>
                 <div class="info-table">
