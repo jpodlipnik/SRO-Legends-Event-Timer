@@ -1,0 +1,23 @@
+// Boss respawn config: name and respawn interval in minutes
+const BOSSES = [
+    { name: "STR Hew Snake General",    respawnMinutes: 450 },
+    { name: "STR Yul Snake General",    respawnMinutes: 450 },
+    { name: "INT Ki Snake General",     respawnMinutes: 450 },
+    { name: "INT Jung Snake General",   respawnMinutes: 450 },
+    { name: "INT SoSo",                 respawnMinutes: 480 },
+    { name: "STR SoSo",                 respawnMinutes: 480 },
+    { name: "SoSo",                     respawnMinutes: 480 },
+    { name: "STR Gnome",                respawnMinutes: 390 },
+    { name: "STR Salamander",           respawnMinutes: 390 },
+    { name: "INT Undine",               respawnMinutes: 390 },
+    { name: "INT Slyph",                respawnMinutes: 390 },
+    { name: "STR Sand Monster",         respawnMinutes: 360 },
+    { name: "INT Sand Monster",         respawnMinutes: 360 },
+    { name: "Ancient Librarian",        respawnMinutes: 480 },
+    { name: "Lost Pharaoh",             respawnMinutes: 510 },
+    { name: "STR Sphinx",               respawnMinutes: 540 },
+    { name: "INT Sphinx",               respawnMinutes: 540 },
+    { name: "STR Desert Beast",         respawnMinutes: 570 },
+    { name: "INT Desert Beast",         respawnMinutes: 570 },
+    { name: "Salt Desert Demon",        respawnMinutes: 600 },
+];

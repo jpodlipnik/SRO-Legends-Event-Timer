@@ -5,248 +5,584 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SRO Legends Ultimate Tracker</title>
     <style>
-        :root { --bg: #0f172a; --card: #1e293b; --accent: #38bdf8; --text: #f8fafc; --highlight: #fbbf24; --danger: #ef4444; --success: #10b981; --input-bg: #334155; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; padding-bottom: 100px; }
-        .header { text-align: center; margin-bottom: 30px; border-bottom: 1px solid #334155; padding-bottom: 20px; }
-        
-        .controls { margin-top: 20px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
-        .btn { background: #334155; color: white; border: 1px solid var(--accent); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; transition: 0.2s; }
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --accent: #38bdf8;
+            --text: #f8fafc;
+            --highlight: #fbbf24;
+            --danger: #ef4444;
+            --success: #10b981;
+            --input-bg: #334155;
+            --border: #334155;
+            --muted: #64748b;
+            --badge-inactive: #94a3b8;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px 20px 100px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 20px;
+        }
+
+        .clock-bar {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            font-weight: 600;
+        }
+
+        .btn {
+            background: var(--border);
+            color: white;
+            border: 1px solid var(--accent);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.2s, color 0.2s;
+        }
+
         .btn:hover { background: var(--accent); color: var(--bg); }
         .btn.active { background: var(--accent); color: var(--bg); font-weight: bold; }
         .btn-add { background: var(--success); border-color: var(--success); font-weight: bold; }
-        .btn-delete { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1.2rem; }
+        .btn-add:disabled { background: var(--muted); border-color: var(--muted); cursor: not-allowed; opacity: 0.5; }
 
-        .manual-entry { background: #1e293b; max-width: 900px; margin: 20px auto; padding: 20px; border-radius: 12px; border: 2px solid var(--highlight); }
-        .input-group { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; align-items: center; margin-top: 15px; }
-        input, select { background: var(--input-bg); color: white; border: 1px solid #475569; padding: 8px; border-radius: 6px; text-align: center; }
-        input[type="number"] { width: 60px; }
+        .btn-delete {
+            background: none;
+            border: none;
+            color: var(--danger);
+            cursor: pointer;
+            font-size: 1.2rem;
+            position: absolute;
+            right: 10px;
+            top: 10px;
+        }
 
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; max-width: 1400px; margin: 20px auto; }
-        .section-title { width: 100%; max-width: 1400px; margin: 50px auto 10px; border-left: 5px solid var(--accent); padding-left: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .manual-entry {
+            background: var(--card);
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 20px;
+            border-radius: 12px;
+            border: 2px solid var(--highlight);
+        }
+
+        .manual-entry h3 {
+            margin: 0;
+            text-align: center;
+            color: var(--highlight);
+        }
+
+        .input-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            margin-top: 15px;
+        }
+
+        input, select {
+            background: var(--input-bg);
+            color: white;
+            border: 1px solid #475569;
+            padding: 8px;
+            border-radius: 6px;
+            text-align: center;
+        }
+
+        input[type="number"] { width: 60px; -moz-appearance: textfield; appearance: textfield; outline: none; }
+        input[type="number"].invalid { border-color: var(--danger); }
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            max-width: 1400px;
+            margin: 20px auto;
+        }
+
+        .section-title {
+            width: 100%;
+            max-width: 1400px;
+            margin: 50px auto 10px;
+            border-left: 5px solid var(--accent);
+            padding-left: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
         .section-title.yellow { border-left-color: var(--highlight); }
-        
-        .card { background: var(--card); border-radius: 12px; padding: 20px; border-top: 4px solid var(--accent); position: relative; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.4); }
+
+        .card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 20px;
+            border-top: 4px solid var(--accent);
+            position: relative;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+        }
+
         .card.manual-card { border-top-color: var(--highlight); }
-        .card.active-alert { border-top-color: var(--danger); animation: pulse 1.5s infinite; }
-        
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+
+        .card.active-alert {
+            border-top-color: var(--danger);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%   { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            70%  { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
         .inactive { opacity: 0.4; filter: grayscale(0.8); }
-        h2 { margin: 0; color: var(--accent); font-size: 1.3rem; }
-        .timer { font-size: 2.4rem; font-weight: bold; font-family: monospace; margin: 10px 0; color: #fff; }
-        .info-table { width: 100%; border-top: 1px solid #334155; margin-top: 10px; padding-top: 10px; font-size: 0.85rem; }
+
+        .card h2 { margin: 0; color: var(--accent); font-size: 1.3rem; }
+
+        .timer {
+            font-size: 2.4rem;
+            font-weight: bold;
+            font-family: monospace;
+            margin: 10px 0;
+            color: #fff;
+        }
+
+        .info-table {
+            width: 100%;
+            border-top: 1px solid var(--border);
+            margin-top: 10px;
+            padding-top: 10px;
+            font-size: 0.85rem;
+        }
+
         .info-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
         .val { font-weight: bold; color: var(--highlight); }
         .local-val { color: var(--success); }
+        .empty-state { grid-column: 1 / -1; text-align: center; color: var(--muted); }
+
+        .boss-search {
+            position: relative;
+            width: 260px;
+        }
+
+        .boss-search input {
+            width: 100%;
+            text-align: left;
+        }
+
+        .boss-dropdown {
+            display: none;
+            position: absolute;
+            left: 0;
+            right: 0;
+            max-height: 200px;
+            overflow-y: auto;
+            background: var(--card);
+            border: 1px solid #475569;
+            z-index: 10;
+        }
+
+        .boss-dropdown.open { display: block; }
+
+        .boss-dropdown.drop-down {
+            top: 100%;
+            border-top: none;
+            border-radius: 0 0 6px 6px;
+        }
+
+        .boss-dropdown.drop-up {
+            bottom: 100%;
+            border-bottom: none;
+            border-radius: 6px 6px 0 0;
+        }
+
+        .boss-option {
+            padding: 8px 10px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .boss-option:hover,
+        .boss-option.highlighted {
+            background: var(--accent);
+            color: var(--bg);
+        }
     </style>
 </head>
 <body>
 
 <div class="header">
     <h1>Silkroad Legends Tracker</h1>
-    <div style="display: flex; justify-content: center; gap: 40px; font-weight: 600;">
+    <div class="clock-bar">
         <div>🌍 Your time: <span id="local-clock" style="color: var(--success)">--:--:--</span></div>
         <div>🏰 Server time (UTC+3): <span id="server-clock" style="color: var(--highlight)">--:--:--</span></div>
     </div>
 </div>
 
 <div class="section-title">
-    <h2>Fixed Event Schedule</h2>
-    <div class="controls">
-        <button class="btn active" id="sort-default" onclick="setSort('default')">Default</button>
-        <button class="btn" id="sort-shortest" onclick="setSort('shortest')">Shortest Time</button>
-    </div>
+    <h2>Event Schedule</h2>
+    <button class="btn" id="toggle-today" onclick="toggleTodayOnly()">Show All</button>
 </div>
 <div class="grid" id="event-grid"></div>
 
-<div class="section-title yellow">
-    <h2>Dynamic Boss Timers (Manual)</h2>
-</div>
-
 <div class="manual-entry">
-    <h3 style="margin:0; text-align:center; color: var(--highlight);">Add Custom Respawn</h3>
+    <h3>Add Custom Respawn</h3>
     <div class="input-group">
-        <select id="boss-select">
-            <option value="450">STR Hew Snake General (7,5h)</option>
-            <option value="450">STR Yul Snake General (7,5h)</option>
-            <option value="450">INT Ki Snake General (7,5h)</option>
-            <option value="450">INT Jung Snake General (7,5h)</option>
-            <option value="480">INT SoSo (8h)</option>
-            <option value="480">STR SoSo (8h)</option>
-            <option value="480">SoSo (8h)</option>
-            <option value="480">STR Gnome (7h)</option>
-            <option value="480">STR Salamander (7h)</option>
-            <option value="480">INT Undine (7h)</option>
-            <option value="480">INT Slyph (7h)</option>
-            <option value="360">STR Sand Monster (6h)</option>
-            <option value="360">INT Sand Monster (6h)</option>
-            <option value="480">Ancient Librarian (8h)</option>
-            <option value="510">Lost Pharaoh (8,5h)</option>
-            <option value="540">STR Sphinx (9h)</option>
-            <option value="540">INT Sphinx (9h)</option>
-            <option value="570">STR Desert Beast (9,5h)</option>
-            <option value="570">INT Desert Beast (9,5h)</option>
-            <option value="600">Salt Desert Demon (10h)</option>
-        </select>
+        <div class="boss-search" id="boss-search">
+            <input type="text" id="boss-input" placeholder="Search boss..." aria-label="Search boss" autocomplete="off">
+            <div class="boss-dropdown" id="boss-dropdown"></div>
+        </div>
         <span>Killed ago:</span>
-        <input type="number" id="k-h" placeholder="H" min="0" value="0">h
-        <input type="number" id="k-m" placeholder="M" min="0" max="59" value="0">m
-        <input type="number" id="k-s" placeholder="S" min="0" max="59" value="0">s
-        <button class="btn btn-add" onclick="addManualBoss()">+ Add Timer</button>
+        <input type="number" id="killed-hours" placeholder="0" min="0" aria-label="Hours ago">h
+        <input type="number" id="killed-minutes" placeholder="0" min="0" max="59" aria-label="Minutes ago">m
+        <button class="btn btn-add" id="add-timer" onclick="addManualBoss()">+ Add Timer</button>
     </div>
 </div>
 
-<div class="grid" id="manual-grid"></div>
-
-<audio id="alarm-sound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
-
+<script src="events.js"></script>
+<script src="bosses.js"></script>
 <script>
-    const serverOffset = 3;
-    let currentSort = 'default';
-    // Naloži shranjene timerje iz LocalStorage
-    let manualBosses = JSON.parse(localStorage.getItem('sro_manual_timers')) || [];
+    // --- Constants ---
+    const MS_PER_SECOND = 1_000;
+    const MS_PER_MINUTE = 60_000;
+    const MS_PER_HOUR = 3_600_000;
+    const SERVER_UTC_OFFSET = 3; // SRO Legends server is UTC+3
+    const ALERT_THRESHOLD_MS = 10 * MS_PER_MINUTE;
+    const STORAGE_KEY = 'sro_manual_timers';
+    const MAX_DAYS_LOOKAHEAD = 8;
 
-    const events = [
-        { id: 1, name: "Selket & Neith", times: ["06:30", "12:30", "18:30"], days: [1,2,3,4,5,6] },
-        { id: 2, name: "Isis & Anubis", times: ["07:30", "14:30", "20:30"], days: [1,2,3,4,5,6] },
-        { id: 3, name: "Haroesis & Seth", times: ["18:30"], days: [0] },
-        { id: 4, name: "Beakyung The White Viper", times: ["21:30"], days: [5] },
-        { id: 5, name: "The Roc", times: ["21:30"], days: [6] },
-        { id: 6, name: "Capture The Flag", times: ["01:00", "05:00", "09:00", "13:00", "17:00", "21:00"], days: [0,1,2,3,4,5,6] },
-        { id: 7, name: "Battle Arena (Score)", times: ["04:00", "08:00", "16:00"], days: [0,1,2,3,4,5,6] },
-        { id: 8, name: "Battle Arena (Flag)", times: ["12:00", "20:00"], days: [0,1,2,3,4,5,6] },
-        { id: 9, name: "Survival Arena", times: ["11:00", "23:00"], days: [0,1,2,3,4,5,6] },
-        { id: 10, name: "Special Goods Time", times: ["03:30", "09:30", "15:30", "21:30"], days: [0,1,2,3,4,5,6] },
-        { id: 11, name: "Last Man Standing", times: ["11:30", "23:30"], days: [0,1,2,3,4,5,6] },
-        { id: 12, name: "War of Leagues", times: ["19:30"], days: [0,1,2,3,4,5,6] },
-        { id: 13, name: "Tower Defense", times: ["17:30"], days: [0,5,6] },
-        { id: 14, name: "Guild Wars", times: ["20:30"], days: [0] },
-        { id: 15, name: "Fortress War", times: ["21:30"], days: [0] },
-    ];
+    // --- DOM references ---
+    const dom = {
+        localClock:    document.getElementById('local-clock'),
+        serverClock:   document.getElementById('server-clock'),
+        eventGrid:     document.getElementById('event-grid'),
+        bossInput:     document.getElementById('boss-input'),
+        bossDropdown:  document.getElementById('boss-dropdown'),
+        killedHours:   document.getElementById('killed-hours'),
+        killedMinutes: document.getElementById('killed-minutes'),
+        addTimer:      document.getElementById('add-timer'),
+        toggleToday:   document.getElementById('toggle-today'),
+    };
+
+    // --- State ---
+    let todayOnly = false;
+    let selectedBoss = null;
+    let highlightedIndex = -1;
+    let manualBosses = loadManualBosses();
+
+    // --- localStorage helpers ---
+
+    function loadManualBosses() {
+        try {
+            return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        } catch {
+            return [];
+        }
+    }
+
+    function saveManualBosses() {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(manualBosses));
+        } catch {
+            // Storage full or unavailable — timers still work this session
+        }
+    }
+
+    // --- Boss search ---
+
+    function bossLabel(boss) {
+        return `${boss.name} (${boss.respawnMinutes / 60}h)`;
+    }
+
+    function filterBosses(query) {
+        const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
+        if (terms.length === 0) return BOSSES;
+        return BOSSES.filter(boss => {
+            const name = boss.name.toLowerCase();
+            return terms.every(t => name.includes(t));
+        });
+    }
+
+    function renderDropdown(matches) {
+        highlightedIndex = -1;
+        if (matches.length === 0) {
+            dom.bossDropdown.innerHTML = '<div class="boss-option" style="color: var(--muted)">No matches</div>';
+        } else {
+            dom.bossDropdown.innerHTML = matches.map((boss, i) =>
+                `<div class="boss-option" data-index="${BOSSES.indexOf(boss)}">${bossLabel(boss)}</div>`
+            ).join('');
+        }
+        dom.bossDropdown.classList.add('open');
+    }
+
+    function selectBoss(boss) {
+        selectedBoss = boss;
+        dom.bossInput.value = bossLabel(boss);
+        dom.bossDropdown.classList.remove('open');
+        validateInputs();
+    }
+
+    function openDropdown() {
+        const matches = filterBosses(dom.bossInput.value);
+        renderDropdown(matches);
+
+        const inputRect = dom.bossInput.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - inputRect.bottom;
+        const dropUp = spaceBelow < 220;
+        dom.bossDropdown.classList.toggle('drop-up', dropUp);
+        dom.bossDropdown.classList.toggle('drop-down', !dropUp);
+    }
+
+    // --- Time helpers ---
+
+    function formatCountdown(ms) {
+        if (ms <= 0) return "SPAWNED!";
+        const h = Math.floor(ms / MS_PER_HOUR);
+        const m = Math.floor((ms % MS_PER_HOUR) / MS_PER_MINUTE);
+        const s = Math.floor((ms % MS_PER_MINUTE) / MS_PER_SECOND);
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    function formatTime(hours, minutes) {
+        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+    }
+
+    function serverDateToLocalDisplay(serverDate) {
+        const now = new Date();
+        const localMs = serverDate.getTime() - SERVER_UTC_OFFSET * MS_PER_HOUR - now.getTimezoneOffset() * MS_PER_MINUTE;
+        const local = new Date(localMs);
+        return formatTime(local.getHours(), local.getMinutes());
+    }
+
+    // --- Boss management ---
+
+    function isValidInput(input) {
+        if (input.value === '') return true;
+        const num = Number(input.value);
+        if (!Number.isInteger(num) || num < 0) return false;
+        if (input.max && num > Number(input.max)) return false;
+        return true;
+    }
+
+    function validateInputs() {
+        let valid = selectedBoss !== null;
+        for (const input of [dom.killedHours, dom.killedMinutes]) {
+            const ok = isValidInput(input);
+            input.classList.toggle('invalid', !ok);
+            if (!ok) valid = false;
+        }
+        dom.addTimer.disabled = !valid;
+        return valid;
+    }
 
     function addManualBoss() {
-        const select = document.getElementById('boss-select');
-        const bossName = select.options[select.selectedIndex].text.split(' (')[0];
-        const spawnIntervalMin = parseInt(select.value);
-        
-        const h = parseInt(document.getElementById('k-h').value) || 0;
-        const m = parseInt(document.getElementById('k-m').value) || 0;
-        const s = parseInt(document.getElementById('k-s').value) || 0;
-        
-        const killedAgoMs = (h * 3600000) + (m * 60000) + (s * 1000);
-        const spawnIntervalMs = spawnIntervalMin * 60000;
-        
-        const now = new Date().getTime();
-        const nextSpawnTimestamp = (now - killedAgoMs) + spawnIntervalMs;
+        if (!validateInputs()) return;
+
+        const spawnIntervalMs = selectedBoss.respawnMinutes * MS_PER_MINUTE;
+
+        const h = parseInt(dom.killedHours.value) || 0;
+        const m = parseInt(dom.killedMinutes.value) || 0;
+        const killedAgoMs = h * MS_PER_HOUR + m * MS_PER_MINUTE;
 
         manualBosses.push({
             id: Date.now(),
-            name: bossName,
-            targetTimestamp: nextSpawnTimestamp
+            name: selectedBoss.name,
+            targetTimestamp: Date.now() - killedAgoMs + spawnIntervalMs,
         });
-        
-        saveAndUpdate();
-        // Reset inputs
-        document.getElementById('k-h').value = 0;
-        document.getElementById('k-m').value = 0;
-        document.getElementById('k-s').value = 0;
+
+        saveManualBosses();
+        update();
+
+        selectedBoss = null;
+        dom.bossInput.value = '';
+        dom.killedHours.value = '';
+        dom.killedMinutes.value = '';
+        validateInputs();
     }
 
     function removeManual(id) {
         manualBosses = manualBosses.filter(b => b.id !== id);
-        saveAndUpdate();
-    }
-
-    function saveAndUpdate() {
-        localStorage.setItem('sro_manual_timers', JSON.stringify(manualBosses));
+        saveManualBosses();
         update();
     }
 
-    function setSort(type) {
-        currentSort = type;
-        document.getElementById('sort-default').classList.toggle('active', type === 'default');
-        document.getElementById('sort-shortest').classList.toggle('active', type === 'shortest');
+    function toggleTodayOnly() {
+        todayOnly = !todayOnly;
+        dom.toggleToday.classList.toggle('active', todayOnly);
+        dom.toggleToday.textContent = todayOnly ? 'Today Only' : 'Show All';
         update();
     }
 
-    function formatDiff(ms) {
-        if (ms <= 0) return "SPAWNED!";
-        const h = Math.floor(ms / 3600000);
-        const m = Math.floor((ms % 3600000) / 60000);
-        const s = Math.floor((ms % 60000) / 1000);
-        return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    // --- Find next occurrence of a scheduled event ---
+
+    function findNextOccurrence(event, serverNow, utcMs) {
+        for (let dayOffset = 0; dayOffset < MAX_DAYS_LOOKAHEAD; dayOffset++) {
+            const checkDay = (serverNow.getDay() + dayOffset) % 7;
+            if (!event.days.includes(checkDay)) continue;
+
+            for (const timeStr of event.times) {
+                const [h, m] = timeStr.split(':').map(Number);
+                const candidate = new Date(utcMs + MS_PER_HOUR * SERVER_UTC_OFFSET);
+                candidate.setDate(serverNow.getDate() + dayOffset);
+                candidate.setHours(h, m, 0, 0);
+
+                if (candidate > serverNow) {
+                    return { nextDate: candidate, displayTimeServer: timeStr };
+                }
+            }
+        }
+        return null;
     }
+
+    // --- Rendering ---
+
+    function buildEventCards(serverNow, utcMs) {
+        return EVENTS.map(event => {
+            const result = findNextOccurrence(event, serverNow, utcMs);
+            const diffMs = result ? result.nextDate - serverNow : Infinity;
+            const displayTimeServer = result ? result.displayTimeServer : "--:--";
+            const localDisplay = result ? serverDateToLocalDisplay(result.nextDate) : "--:--";
+            const isToday = event.days.includes(serverNow.getDay());
+            return { type: 'event', diffMs, name: event.name, isToday, displayTimeServer, localDisplay };
+        });
+    }
+
+    function buildManualCards(now) {
+        return manualBosses.map(boss => {
+            const diffMs = boss.targetTimestamp - now.getTime();
+            const spawnLocal = new Date(boss.targetTimestamp);
+            const spawnServerMs = boss.targetTimestamp + now.getTimezoneOffset() * MS_PER_MINUTE + MS_PER_HOUR * SERVER_UTC_OFFSET;
+            const spawnServer = new Date(spawnServerMs);
+            return {
+                type: 'manual', diffMs, name: boss.name, manualId: boss.id,
+                displayTimeServer: formatTime(spawnServer.getHours(), spawnServer.getMinutes()),
+                localDisplay: formatTime(spawnLocal.getHours(), spawnLocal.getMinutes()),
+            };
+        });
+    }
+
+    function renderCard(card) {
+        const isSoon = card.diffMs > 0 && card.diffMs < ALERT_THRESHOLD_MS;
+
+        if (card.type === 'manual') {
+            return `
+                <div class="card manual-card ${isSoon ? 'active-alert' : ''}">
+                    <button class="btn-delete" onclick="removeManual(${card.manualId})" aria-label="Remove ${card.name} timer">✖</button>
+                    <span class="status-badge" style="color: var(--highlight)">● Manual Spawn</span>
+                    <h2>${card.name}</h2>
+                    <div class="timer">${formatCountdown(card.diffMs)}</div>
+                    <div class="info-table">
+                        <div class="info-row"><span>Server:</span><span class="val">${card.displayTimeServer}</span></div>
+                        <div class="info-row"><span>Local:</span><span class="val local-val">${card.localDisplay}</span></div>
+                    </div>
+                </div>`;
+        }
+
+        return `
+            <div class="card ${card.isToday ? '' : 'inactive'} ${isSoon ? 'active-alert' : ''}">
+                <span class="status-badge" style="color: ${card.isToday ? 'var(--success)' : 'var(--badge-inactive)'}">
+                    ${card.isToday ? '● Available' : '○ Not available today'}
+                </span>
+                <h2>${card.name}</h2>
+                <div class="timer">${formatCountdown(card.diffMs)}</div>
+                <div class="info-table">
+                    <div class="info-row"><span>Server:</span><span class="val">${card.displayTimeServer}</span></div>
+                    <div class="info-row"><span>Local:</span><span class="val local-val">${card.localDisplay}</span></div>
+                </div>
+            </div>`;
+    }
+
+    function renderGrid(serverNow, utcMs, now) {
+        let cards = [...buildEventCards(serverNow, utcMs), ...buildManualCards(now)];
+        if (todayOnly) {
+            cards = cards.filter(c => c.type === 'manual' || c.isToday);
+        }
+        cards.sort((a, b) => a.diffMs - b.diffMs);
+        dom.eventGrid.innerHTML = cards.map(renderCard).join('');
+    }
+
+    // --- Main update loop ---
 
     function update() {
         const now = new Date();
-        const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-        const serverDate = new Date(utc + (3600000 * serverOffset));
-        
-        document.getElementById('local-clock').innerText = now.toLocaleTimeString('sl-SI');
-        document.getElementById('server-clock').innerText = serverDate.toLocaleTimeString('sl-SI', {hour12: false});
+        const utcMs = now.getTime() + now.getTimezoneOffset() * MS_PER_MINUTE;
+        const serverNow = new Date(utcMs + MS_PER_HOUR * SERVER_UTC_OFFSET);
 
-        // 1. FIXED EVENTS
-        let eventData = events.map(event => {
-            let nextDate = null;
-            let displayTimeServer = "";
-            for (let dOff = 0; dOff < 8; dOff++) {
-                let checkDay = (serverDate.getDay() + dOff) % 7;
-                if (event.days.includes(checkDay)) {
-                    for (let tStr of event.times) {
-                        const [h, m] = tStr.split(':').map(Number);
-                        let temp = new Date(utc + (3600000 * serverOffset));
-                        temp.setDate(serverDate.getDate() + dOff);
-                        temp.setHours(h, m, 0, 0);
-                        if (temp > serverDate) { nextDate = temp; displayTimeServer = tStr; break; }
-                    }
-                }
-                if (nextDate) break;
-            }
-            const diffMs = nextDate - serverDate;
-            const localDate = new Date(nextDate.getTime() - (serverOffset * 3600000) + (now.getTimezoneOffset() * -60000));
-            return { ...event, diffMs, displayTimeServer, localDisplay: localDate.getHours() + ":" + String(localDate.getMinutes()).padStart(2, '0'), isToday: event.days.includes(serverDate.getDay()) };
-        });
+        dom.localClock.textContent = now.toLocaleTimeString(undefined, { hour12: false });
+        dom.serverClock.textContent = serverNow.toLocaleTimeString(undefined, { hour12: false });
 
-        if (currentSort === 'shortest') eventData.sort((a, b) => a.diffMs - b.diffMs);
-        else eventData.sort((a, b) => a.id - b.id);
-
-        let fixedHtml = "";
-        eventData.forEach(e => {
-            const isSoon = e.diffMs < 600000;
-            fixedHtml += `<div class="card ${!e.isToday ? 'inactive' : ''} ${isSoon ? 'active-alert' : ''}">
-                <span class="status-badge" style="color:${e.isToday ? 'var(--success)' : '#94a3b8'}">${e.isToday ? '● Available' : '○ Not available today'}</span>
-                <h2>${e.name}</h2>
-                <div class="timer">${formatDiff(e.diffMs)}</div>
-                <div class="info-table">
-                    <div class="info-row"><span class="label">Server:</span><span class="val">${e.displayTimeServer}</span></div>
-                    <div class="info-row"><span class="label">Local:</span><span class="val local-val">${e.localDisplay}</span></div>
-                </div>
-            </div>`;
-        });
-        document.getElementById('event-grid').innerHTML = fixedHtml;
-
-        // 2. DYNAMIC MANUAL BOSSES
-        let manualHtml = "";
-        manualBosses.forEach(boss => {
-            const diffMs = boss.targetTimestamp - now.getTime();
-            const spawnDate = new Date(boss.targetTimestamp);
-            const sDate = new Date(boss.targetTimestamp + (now.getTimezoneOffset() * 60000) + (3600000 * serverOffset));
-            
-            manualHtml += `<div class="card manual-card ${diffMs < 600000 && diffMs > 0 ? 'active-alert' : ''}">
-                <button class="btn-delete" style="position:absolute; right:10px; top:10px;" onclick="removeManual(${boss.id})">✖</button>
-                <span class="status-badge" style="color:var(--highlight)">● Manual Spawn</span>
-                <h2>${boss.name}</h2>
-                <div class="timer">${formatDiff(diffMs)}</div>
-                <div class="info-table">
-                    <div class="info-row"><span class="label">Next spawn (Server):</span><span class="val">${sDate.getHours()}:${String(sDate.getMinutes()).padStart(2,'0')}</span></div>
-                    <div class="info-row"><span class="label">Next spawn (Local):</span><span class="val local-val">${spawnDate.getHours()}:${String(spawnDate.getMinutes()).padStart(2,'0')}</span></div>
-                </div>
-            </div>`;
-        });
-        document.getElementById('manual-grid').innerHTML = manualHtml || '<p style="grid-column:1/-1; text-align:center; color:#64748b;">No manual timers active.</p>';
+        renderGrid(serverNow, utcMs, now);
     }
 
-    document.body.addEventListener('click', () => { console.log("Audio enabled"); }, {once: true});
-    setInterval(update, 1000);
+    // --- Input behavior ---
+    for (const input of [dom.killedHours, dom.killedMinutes]) {
+        input.addEventListener('input', () => validateInputs());
+    }
+
+    // --- Boss search behavior ---
+    dom.bossInput.addEventListener('focus', openDropdown);
+    dom.bossInput.addEventListener('input', () => {
+        selectedBoss = null;
+        openDropdown();
+        validateInputs();
+    });
+
+    dom.bossDropdown.addEventListener('mousedown', e => {
+        const option = e.target.closest('.boss-option');
+        if (!option || option.dataset.index === undefined) return;
+        selectBoss(BOSSES[Number(option.dataset.index)]);
+    });
+
+    dom.bossInput.addEventListener('keydown', e => {
+        const items = dom.bossDropdown.querySelectorAll('.boss-option[data-index]');
+        if (!items.length) return;
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            highlightedIndex = Math.min(highlightedIndex + 1, items.length - 1);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            highlightedIndex = Math.max(highlightedIndex - 1, 0);
+        } else if (e.key === 'Enter' && highlightedIndex >= 0) {
+            e.preventDefault();
+            items[highlightedIndex].click();
+            return;
+        } else if (e.key === 'Escape') {
+            dom.bossDropdown.classList.remove('open');
+            return;
+        } else {
+            return;
+        }
+
+        items.forEach((el, i) => el.classList.toggle('highlighted', i === highlightedIndex));
+        items[highlightedIndex].scrollIntoView({ block: 'nearest' });
+    });
+
+    document.addEventListener('click', e => {
+        if (!e.target.closest('#boss-search')) {
+            dom.bossDropdown.classList.remove('open');
+        }
+    });
+
+    // --- Start ---
+    validateInputs();
+    setInterval(update, MS_PER_SECOND);
     update();
 </script>
 </body>
