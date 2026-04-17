@@ -20,4 +20,6 @@ const BOSSES = [
     { name: "STR Desert Beast",         respawnMinutes: 570 },
     { name: "INT Desert Beast",         respawnMinutes: 570 },
     { name: "Salt Desert Demon",        respawnMinutes: 600 },
+    { name: "Poison Frog",              respawnMinutes: 720 },
+    { name: "Poison Spider",            respawnMinutes: 360 },
 ];
