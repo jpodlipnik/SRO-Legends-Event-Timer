@@ -70,6 +70,17 @@
             top: 10px;
         }
 
+        .btn-dead {
+            background: none;
+            border: none;
+            color: var(--success);
+            cursor: pointer;
+            font-size: 1.2rem;
+            position: absolute;
+            right: 40px;
+            top: 10px;
+        }
+
         .manual-entry {
             background: var(--card);
             max-width: 900px;
@@ -422,6 +433,16 @@
         update();
     }
 
+    function markManualDead(id) {
+        const boss = manualBosses.find(b => b.id === id);
+        if (!boss) return;
+        const bossConfig = BOSSES.find(b => b.name === boss.name);
+        if (!bossConfig) return;
+        boss.targetTimestamp = Date.now() + bossConfig.respawnMinutes * MS_PER_MINUTE;
+        saveManualBosses();
+        update();
+    }
+
     function toggleTodayOnly() {
         todayOnly = !todayOnly;
         dom.toggleToday.classList.toggle('active', todayOnly);
@@ -481,8 +502,10 @@
         const isSoon = card.diffMs > 0 && card.diffMs < ALERT_THRESHOLD_MS;
 
         if (card.type === 'manual') {
+            const hasSpawned = card.diffMs <= 0;
             return `
                 <div class="card manual-card ${isSoon ? 'active-alert' : ''}">
+                    ${hasSpawned ? `<button class="btn-dead" onclick="markManualDead(${card.manualId})" aria-label="Mark ${card.name} as dead">💀</button>` : ''}
                     <button class="btn-delete" onclick="removeManual(${card.manualId})" aria-label="Remove ${card.name} timer">✖</button>
                     <span class="status-badge" style="color: var(--highlight)">● Manual Spawn</span>
                     <h2>${card.name}</h2>
