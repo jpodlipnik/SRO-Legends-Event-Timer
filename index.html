@@ -364,10 +364,9 @@
     }
 
     function serverDateToLocalDisplay(serverDate) {
-        const now = new Date();
-        const localMs = serverDate.getTime() - SERVER_UTC_OFFSET * MS_PER_HOUR - now.getTimezoneOffset() * MS_PER_MINUTE;
-        const local = new Date(localMs);
-        return formatTime(local.getHours(), local.getMinutes());
+        const utcTimestamp = serverDate.getTime() - (SERVER_UTC_OFFSET * MS_PER_HOUR);
+        const localDate = new Date(utcTimestamp);
+        return formatTime(localDate.getHours(), localDate.getMinutes());
     }
 
     // --- Boss management ---
@@ -433,15 +432,17 @@
 
     function findNextOccurrence(event, serverNow, utcMs) {
         for (let dayOffset = 0; dayOffset < MAX_DAYS_LOOKAHEAD; dayOffset++) {
-            const checkDay = (serverNow.getDay() + dayOffset) % 7;
+            const checkDay = (serverNow.getUTCDay() + dayOffset) % 7;
             if (!event.days.includes(checkDay)) continue;
-
+    
             for (const timeStr of event.times) {
                 const [h, m] = timeStr.split(':').map(Number);
-                const candidate = new Date(utcMs + MS_PER_HOUR * SERVER_UTC_OFFSET);
-                candidate.setDate(serverNow.getDate() + dayOffset);
-                candidate.setHours(h, m, 0, 0);
-
+                
+                // Ustvarimo candidate v UTC času
+                const candidate = new Date(serverNow.getTime());
+                candidate.setUTCDate(serverNow.getUTCDate() + dayOffset);
+                candidate.setUTCHours(h, m, 0, 0);
+    
                 if (candidate > serverNow) {
                     return { nextDate: candidate, displayTimeServer: timeStr };
                 }
