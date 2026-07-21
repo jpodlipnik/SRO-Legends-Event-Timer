@@ -19,5 +19,5 @@ const EVENTS = [
     { id: 16, name: "Fortress War",             times: ["21:30"],                                                days: [0] },
     { id: 17, name: "Selket & Neith (S)",       times: ["06:30", "12:30"],                                       days: [0] },
     { id: 18, name: "Isis & Anubis (S)",        times: ["07:30", "14:30"],                                       days: [0] },
-    { id: 19, name: "Thief Special Goods",      times: ["22:00"],                                                days: [0, 1, 2, 3, 4, 5, 6] },
+    { id: 19, name: "Thief Special Goods",      times: ["22:00"],                                                days: [0, 1, 2, 3, 4, 5, 6] }
 ];
