@@ -262,7 +262,7 @@
     const MS_PER_SECOND = 1_000;
     const MS_PER_MINUTE = 60_000;
     const MS_PER_HOUR = 3_600_000;
-    const SERVER_UTC_OFFSET = 3; // SRO Legends server is UTC+3
+    const SERVER_UTC_OFFSET = 3; // UTC+3
     const ALERT_THRESHOLD_MS = 10 * MS_PER_MINUTE;
     const STORAGE_KEY = 'sro_manual_timers';
     const MAX_DAYS_LOOKAHEAD = 8;
@@ -286,25 +286,15 @@
     let highlightedIndex = -1;
     let manualBosses = loadManualBosses();
 
-    // --- localStorage helpers ---
-
     function loadManualBosses() {
-        try {
-            return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-        } catch {
-            return [];
-        }
+        try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } 
+        catch { return []; }
     }
 
     function saveManualBosses() {
-        try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(manualBosses));
-        } catch {
-            // Storage full or unavailable — timers still work this session
-        }
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(manualBosses)); } 
+        catch {}
     }
-
-    // --- Boss search ---
 
     function bossLabel(boss) {
         return `${boss.name} (${boss.respawnMinutes / 60}h)`;
@@ -341,15 +331,12 @@
     function openDropdown() {
         const matches = filterBosses(dom.bossInput.value);
         renderDropdown(matches);
-
         const inputRect = dom.bossInput.getBoundingClientRect();
         const spaceBelow = window.innerHeight - inputRect.bottom;
         const dropUp = spaceBelow < 220;
         dom.bossDropdown.classList.toggle('drop-up', dropUp);
         dom.bossDropdown.classList.toggle('drop-down', !dropUp);
     }
-
-    // --- Time helpers ---
 
     function formatCountdown(ms) {
         if (ms <= 0) return "SPAWNED!";
@@ -362,14 +349,6 @@
     function formatTime(hours, minutes) {
         return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
     }
-
-    function serverDateToLocalDisplay(serverDate) {
-        const utcTimestamp = serverDate.getTime() - (SERVER_UTC_OFFSET * MS_PER_HOUR);
-        const localDate = new Date(utcTimestamp);
-        return formatTime(localDate.getHours(), localDate.getMinutes());
-    }
-
-    // --- Boss management ---
 
     function isValidInput(input) {
         if (input.value === '') return true;
@@ -392,9 +371,7 @@
 
     function addManualBoss() {
         if (!validateInputs()) return;
-
         const spawnIntervalMs = selectedBoss.respawnMinutes * MS_PER_MINUTE;
-
         const h = parseInt(dom.killedHours.value) || 0;
         const m = parseInt(dom.killedMinutes.value) || 0;
         const killedAgoMs = h * MS_PER_HOUR + m * MS_PER_MINUTE;
@@ -428,38 +405,52 @@
         update();
     }
 
-    // --- Find next occurrence of a scheduled event ---
+    // --- PRAVA FUNKCIJA ZA RAČUNANJE NASLEDNJEGA DOGODKA ---
+    function findNextOccurrence(event, now) {
+        // Trenutni čas v UTC
+        const nowUtcMs = now.getTime();
 
-    function findNextOccurrence(event, serverNow, utcMs) {
         for (let dayOffset = 0; dayOffset < MAX_DAYS_LOOKAHEAD; dayOffset++) {
-            const checkDay = (serverNow.getUTCDay() + dayOffset) % 7;
-            if (!event.days.includes(checkDay)) continue;
-    
+            // Ugotovimo strežniški dan v tednu za ta offset
+            const checkServerDate = new Date(nowUtcMs + (SERVER_UTC_OFFSET * MS_PER_HOUR) + (dayOffset * 24 * MS_PER_HOUR));
+            const serverDayOfWeek = checkServerDate.getUTCDay();
+
+            if (!event.days.includes(serverDayOfWeek)) continue;
+
             for (const timeStr of event.times) {
                 const [h, m] = timeStr.split(':').map(Number);
                 
-                // Ustvarimo candidate v UTC času
-                const candidate = new Date(serverNow.getTime());
-                candidate.setUTCDate(serverNow.getUTCDate() + dayOffset);
-                candidate.setUTCHours(h, m, 0, 0);
-    
-                if (candidate > serverNow) {
-                    return { nextDate: candidate, displayTimeServer: timeStr };
+                // Ustvarimo točen UTC timestamp za dogodek
+                const eventUtcMs = Date.UTC(
+                    checkServerDate.getUTCFullYear(),
+                    checkServerDate.getUTCMonth(),
+                    checkServerDate.getUTCDate(),
+                    h - SERVER_UTC_OFFSET, // Pretvorimo strežniško uro v UTC
+                    m, 0, 0
+                );
+
+                const diffMs = eventUtcMs - nowUtcMs;
+
+                if (diffMs > 0) {
+                    const localEventDate = new Date(eventUtcMs);
+                    return {
+                        diffMs,
+                        displayTimeServer: timeStr,
+                        localDisplay: formatTime(localEventDate.getHours(), localEventDate.getMinutes())
+                    };
                 }
             }
         }
         return null;
     }
 
-    // --- Rendering ---
-
-    function buildEventCards(serverNow, utcMs) {
+    function buildEventCards(now, serverNow) {
         return EVENTS.map(event => {
-            const result = findNextOccurrence(event, serverNow, utcMs);
-            const diffMs = result ? result.nextDate - serverNow : Infinity;
+            const result = findNextOccurrence(event, now);
+            const diffMs = result ? result.diffMs : Infinity;
             const displayTimeServer = result ? result.displayTimeServer : "--:--";
-            const localDisplay = result ? serverDateToLocalDisplay(result.nextDate) : "--:--";
-            const isToday = event.days.includes(serverNow.getDay());
+            const localDisplay = result ? result.localDisplay : "--:--";
+            const isToday = event.days.includes(serverNow.getUTCDay());
             return { type: 'event', diffMs, name: event.name, isToday, displayTimeServer, localDisplay };
         });
     }
@@ -468,11 +459,11 @@
         return manualBosses.map(boss => {
             const diffMs = boss.targetTimestamp - now.getTime();
             const spawnLocal = new Date(boss.targetTimestamp);
-            const spawnServerMs = boss.targetTimestamp + now.getTimezoneOffset() * MS_PER_MINUTE + MS_PER_HOUR * SERVER_UTC_OFFSET;
+            const spawnServerMs = boss.targetTimestamp + (SERVER_UTC_OFFSET * MS_PER_HOUR);
             const spawnServer = new Date(spawnServerMs);
             return {
                 type: 'manual', diffMs, name: boss.name, manualId: boss.id,
-                displayTimeServer: formatTime(spawnServer.getHours(), spawnServer.getMinutes()),
+                displayTimeServer: formatTime(spawnServer.getUTCHours(), spawnServer.getUTCMinutes()),
                 localDisplay: formatTime(spawnLocal.getHours(), spawnLocal.getMinutes()),
             };
         });
@@ -509,8 +500,8 @@
             </div>`;
     }
 
-    function renderGrid(serverNow, utcMs, now) {
-        let cards = [...buildEventCards(serverNow, utcMs), ...buildManualCards(now)];
+    function renderGrid(now, serverNow) {
+        let cards = [...buildEventCards(now, serverNow), ...buildManualCards(now)];
         if (todayOnly) {
             cards = cards.filter(c => c.type === 'manual' || c.isToday);
         }
@@ -518,25 +509,22 @@
         dom.eventGrid.innerHTML = cards.map(renderCard).join('');
     }
 
-    // --- Main update loop ---
-
     function update() {
         const now = new Date();
-        const utcMs = now.getTime() + now.getTimezoneOffset() * MS_PER_MINUTE;
-        const serverNow = new Date(utcMs + MS_PER_HOUR * SERVER_UTC_OFFSET);
+        // Ustvarimo pravi UTC strežniški čas
+        const serverNow = new Date(now.getTime() + (SERVER_UTC_OFFSET * MS_PER_HOUR));
 
         dom.localClock.textContent = now.toLocaleTimeString(undefined, { hour12: false });
-        dom.serverClock.textContent = serverNow.toLocaleTimeString(undefined, { hour12: false });
+        dom.serverClock.textContent = serverNow.toLocaleTimeString('en-GB', { timeZone: 'UTC', hour12: false });
 
-        renderGrid(serverNow, utcMs, now);
+        renderGrid(now, serverNow);
     }
 
-    // --- Input behavior ---
+    // --- Listeners ---
     for (const input of [dom.killedHours, dom.killedMinutes]) {
         input.addEventListener('input', () => validateInputs());
     }
 
-    // --- Boss search behavior ---
     dom.bossInput.addEventListener('focus', openDropdown);
     dom.bossInput.addEventListener('input', () => {
         selectedBoss = null;
@@ -559,7 +547,7 @@
             highlightedIndex = Math.min(highlightedIndex + 1, items.length - 1);
         } else if (e.key === 'ArrowUp') {
             e.preventDefault();
-            highlightedIndex = Math.max(highlightedIndex - 1, 0);
+            highlightedIndex = Math.max(highlightedIndex + 1, 0);
         } else if (e.key === 'Enter' && highlightedIndex >= 0) {
             e.preventDefault();
             items[highlightedIndex].click();
